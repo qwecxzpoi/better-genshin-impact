@@ -44,7 +44,7 @@ public partial class ScriptRepoWindow
     // 添加进度相关的可观察属性
     [ObservableProperty] private bool _isUpdating;
     [ObservableProperty] private int _updateProgressValue;
-    [ObservableProperty] private string _updateProgressText = "准备更新...";
+    [ObservableProperty] private string _updateProgressText = "准备更新，请耐心等待...";
     [ObservableProperty] private ScriptConfig _config = TaskContext.Instance().Config.ScriptConfig;
 
     public ScriptRepoWindow()
@@ -85,7 +85,8 @@ public partial class ScriptRepoWindow
         {
             new("CNB", "https://cnb.cool/bettergi/bettergi-scripts-list"),
             new("GitCode", "https://gitcode.com/huiyadanli/bettergi-scripts-list"),
-            new("Gitee", "https://gitee.com/babalae/bettergi-scripts-list"),
+            // 暂时无法使用
+            // new("Gitee", "https://gitee.com/babalae/bettergi-scripts-list"),
             new("GitHub", "https://github.com/babalae/bettergi-scripts-list"),
             new("自定义", "https://example.com/custom-repo")
         };
@@ -151,7 +152,7 @@ public partial class ScriptRepoWindow
             // 设置进度显示
             IsUpdating = true;
             UpdateProgressValue = 0;
-            UpdateProgressText = "准备更新...";
+            UpdateProgressText = "准备更新，请耐心等待...";
             // 执行更新  (repoPath, updated) 
             var (_, updated) = await ScriptRepoUpdater.Instance.UpdateCenterRepoByGit(repoUrl,
                 (path, steps, totalSteps) =>
