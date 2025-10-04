@@ -754,7 +754,7 @@
                             <Style x:Key="GuardianVisibilityStyle" TargetType="FrameworkElement">
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                    <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -779,10 +779,8 @@
                                   HorizontalContentAlignment="Center"
                                   VerticalContentAlignment="Center"
                                   Margin="10,0,10,0"
-                                  ItemsSource=' 1234'
-                                  SelectedIndex="{Binding Config.AutoFightConfig.GuardianAvatar, Mode=TwoWay}"
+                                  ItemsSource="{Binding Source={x:Static pages:TaskSettingsPageViewModel.AvatarIndexList}}"
                                   SelectedItem="{Binding Config.AutoFightConfig.GuardianAvatar, Mode=TwoWay}" />
-                        <!--todo ItemsSource=' 1234'导致XAML设计器无法加载-->
 
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="2"
@@ -812,7 +810,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -841,7 +839,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -870,7 +868,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -2339,10 +2337,11 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" />
-                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
@@ -2359,16 +2358,53 @@
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                   TextWrapping="Wrap">
                         只要满足的圣遗物都会被选中
-                        <LineBreak/>
-                        JS接受ArtifactStat作为入参；应对Output赋值一个布尔值作为返回
                     </ui:TextBlock>
-                    <ui:TextBox Grid.Row="0"
+                    <ui:Button Grid.Row="0"
+                               Grid.RowSpan="2"
+                               Grid.Column="1"
+                               Margin="0,0,36,0"
+                               Content="从脚本仓库复制"
+                               Command="{Binding CopyArtifactSalvageJavaScriptFromRepositoryCommand}" />
+                    <ui:TextBox Grid.Row="2"
                                 Grid.RowSpan="2"
-                                Grid.Column="1"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
                                 MinWidth="180"
                                 MaxWidth="800"
                                 Margin="0,0,36,0"
                                 Text="{Binding Config.AutoArtifactSalvageConfig.JavaScript, Mode=TwoWay}"
+                                TextWrapping="Wrap" Cursor="IBeam" />
+                </Grid>
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  TextWrapping="Wrap">
+                        按套装筛选
+                    </ui:TextBlock>
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  TextWrapping="Wrap">
+                        利用游戏自带的筛选功能先行筛选
+                        <LineBreak/>
+                        一般填写套装内生之花名，可填入多个名称；留空则不用
+                    </ui:TextBlock>
+                    <ui:TextBox Grid.Row="1"
+                                Grid.RowSpan="2"
+                                Grid.Column="1"
+                                MinWidth="180"
+                                MaxWidth="400"
+                                Margin="0,0,36,0"
+                                Text="{Binding Config.AutoArtifactSalvageConfig.ArtifactSetFilter, Mode=TwoWay}"
                                 TextWrapping="Wrap" Cursor="IBeam" />
                 </Grid>
                 <Grid Margin="16">
@@ -2425,6 +2461,35 @@
                                   Margin="0,0,36,0"
                                   Value="{Binding Config.AutoArtifactSalvageConfig.MaxNumToCheck, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Text="{Binding Config.AutoArtifactSalvageConfig.MaxNumToCheck, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  Text="识别失败策略"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="识别单个圣遗物面板信息失败时，是跳过还是终止"
+                                  TextWrapping="Wrap" />
+                    <ComboBox Grid.Row="0"
+                              Grid.RowSpan="2"
+                              Grid.Column="1"
+                              Width="100"
+                              Margin="0,0,36,0"
+                              ItemsSource="{Binding RecognitionFailurePolicyDict}"
+                              SelectedValuePath="Key"
+                              DisplayMemberPath="Value"
+                              SelectedItem="{Binding Config.AutoArtifactSalvageConfig.RecognitionFailurePolicy, Converter={StaticResource EnumToKVPConverter}, Mode=TwoWay}" />
                 </Grid>
             </StackPanel>
         </ui:CardExpander>
