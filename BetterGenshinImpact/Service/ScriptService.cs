@@ -486,6 +486,7 @@ public partial class ScriptService : IScriptService
         target.JsScriptSettingsObject = source.JsScriptSettingsObject;
         target.GroupInfo = source.GroupInfo;
         target.AllowJsNotification = source.AllowJsNotification;
+        target.AllowJsHTTPHash = source.AllowJsHTTPHash;
         target.SkipFlag = source.SkipFlag;
     }
 
@@ -582,7 +583,7 @@ public partial class ScriptService : IScriptService
                             continue;
                         }
 
-                        var content = TaskControl.CaptureToRectArea();
+                        using var content = TaskControl.CaptureToRectArea();
                         if (Bv.IsInMainUi(content) || Bv.IsInAnyClosableUi(content) || Bv.IsInDomain(content))
                         {
                             return;
