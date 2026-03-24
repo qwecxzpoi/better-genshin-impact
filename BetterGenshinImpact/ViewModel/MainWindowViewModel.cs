@@ -34,6 +34,8 @@ using BetterGenshinImpact.ViewModel.Windows;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
 
+using BetterGenshinImpact.Platform.Wine;
+
 namespace BetterGenshinImpact.ViewModel;
 
 public partial class MainWindowViewModel : ObservableObject, IViewModel
@@ -164,6 +166,13 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
             _logger.LogInformation($"主题类型已从 {originalThemeType} 修正为 {themeType}，因为当前系统不支持该主题效果");
         }
 
+        if (WinePlatformAddon.IsRunningOnWine)
+        {
+            // Wine 平台下不应用主题
+            _logger.LogInformation("检测到运行在 Wine 平台，跳过主题应用");
+            return;
+        }
+
         switch (themeType)
         {
             case ThemeType.DarkNone:
@@ -241,7 +250,7 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
         // 预热OCR
         await OcrPreheating();
 
-        if (Environment.GetCommandLineArgs().Length > 1)
+        if (CommandLineOptions.Instance.HasTaskArgs)
         {
             return;
         }
@@ -251,6 +260,12 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
 
         // 删除多余特征点
         Patch2();
+
+        // 启动时关闭布局编辑模式
+        if (Config.MaskWindowConfig.OverlayLayoutEditEnabled)
+        {
+            Config.MaskWindowConfig.OverlayLayoutEditEnabled = false;
+        }
 
         // 首次运行
         if (Config.CommonConfig.IsFirstRun)
@@ -284,6 +299,11 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
 
         // 更新仓库
         // ScriptRepoUpdater.Instance.AutoUpdate();
+
+        // 自动更新已订阅的脚本 会先更新仓库
+        // 使用 Task.Run 确保整个流程在线程池执行，避免 WPF SynchronizationContext
+        // 将 await 后续调度回 UI 线程导致大量 IO/Git 操作阻塞界面
+        _ = Task.Run(() => ScriptRepoUpdater.Instance.AutoUpdateSubscribedScripts());
 
         // 清理临时目录
         TempManager.CleanUp();
@@ -429,8 +449,8 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
             deviceId = "default"; // 如果获取设备ID失败，使用默认值
         }
 
-        // 每个设备只运行一次
-        if (!Config.CommonConfig.OnceHadRunDeviceIdList.Contains(deviceId))
+        // 每个设备只运行一次 | 在Wine上会崩溃
+        if (!Config.CommonConfig.OnceHadRunDeviceIdList.Contains(deviceId) && !WinePlatformAddon.IsRunningOnWine)
         {
             WelcomeDialog prompt = new WelcomeDialog
             {

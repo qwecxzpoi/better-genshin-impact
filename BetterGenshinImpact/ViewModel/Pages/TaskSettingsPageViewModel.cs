@@ -3,9 +3,11 @@ using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.Core.Script.Project;
 using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
+using BetterGenshinImpact.GameTask.AutoCook;
 using BetterGenshinImpact.GameTask.AutoDomain;
 using BetterGenshinImpact.GameTask.AutoFight;
 using BetterGenshinImpact.GameTask.AutoFishing;
+using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation;
 using BetterGenshinImpact.GameTask.AutoMusicGame;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
@@ -117,6 +119,12 @@ public partial class TaskSettingsPageViewModel : ViewModel
     private string _switchAutoAlbumButtonText = "启动";
 
     [ObservableProperty]
+    private bool _switchAutoCookEnabled;
+
+    [ObservableProperty]
+    private string _switchAutoCookButtonText = "启动";
+
+    [ObservableProperty]
     private List<string> _domainNameList;
 
     public static List<string> ArtifactSalvageStarList = ["4", "3", "2", "1"];
@@ -124,6 +132,8 @@ public partial class TaskSettingsPageViewModel : ViewModel
     public static List<int> BossNumList = [1, 2, 3];
 
     public static List<string> AvatarIndexList = ["", "1", "2", "3", "4"];
+    public static List<string> LeyLineOutcropTypeList = ["启示之花", "藏金之花"];
+    public static List<string> LeyLineOutcropCountryList = ["蒙德", "璃月", "稻妻", "须弥", "枫丹", "纳塔", "挪德卡莱"];
 
     [ObservableProperty]
     private List<string> _autoMusicLevelList = ["传说", "大师", "困难", "普通", "所有"];
@@ -141,6 +151,15 @@ public partial class TaskSettingsPageViewModel : ViewModel
     private string _switchAutoFishingButtonText = "启动";
 
     [ObservableProperty]
+    private bool _switchAutoLeyLineOutcropEnabled;
+
+    [ObservableProperty]
+    private string _switchAutoLeyLineOutcropButtonText = "启动";
+
+    [ObservableProperty]
+    private bool _scanDropsAfterRewardEnabledUi;
+
+    [ObservableProperty]
     private FrozenDictionary<Enum, string> _fishingTimePolicyDict = Enum.GetValues(typeof(FishingTimePolicy))
         .Cast<FishingTimePolicy>()
         .ToFrozenDictionary(
@@ -151,6 +170,8 @@ public partial class TaskSettingsPageViewModel : ViewModel
                 .Description ?? e.ToString());
 
     private bool saveScreenshotOnKeyTick;
+    private bool _suppressScanDropsAfterRewardPrompt;
+    private int _scanDropsAfterRewardPromptVersion;
     public bool SaveScreenshotOnKeyTick
     {
         get => Config.CommonConfig.ScreenshotEnabled && saveScreenshotOnKeyTick;
@@ -198,6 +219,8 @@ public partial class TaskSettingsPageViewModel : ViewModel
         Config = configService.Get();
         _navigationService = navigationService;
         _taskDispatcher = taskTriggerDispatcher;
+        NormalizeLeyLineOutcropType();
+        _scanDropsAfterRewardEnabledUi = Config.AutoLeyLineOutcropConfig.ScanDropsAfterRewardEnabled;
 
         //_strategyList = LoadCustomScript(Global.Absolute(@"User\AutoGeniusInvokation"));
 
@@ -206,6 +229,77 @@ public partial class TaskSettingsPageViewModel : ViewModel
         _domainNameList = ["", .. MapLazyAssets.Instance.DomainNameList];
         _autoFightViewModel = new AutoFightViewModel(Config);
         _oneDragonFlowViewModel = new OneDragonFlowViewModel();
+    }
+
+    partial void OnScanDropsAfterRewardEnabledUiChanged(bool value)
+    {
+        if (_suppressScanDropsAfterRewardPrompt)
+        {
+            return;
+        }
+
+        if (!value)
+        {
+            Interlocked.Increment(ref _scanDropsAfterRewardPromptVersion);
+            Config.AutoLeyLineOutcropConfig.ScanDropsAfterRewardEnabled = false;
+            return;
+        }
+
+        var version = Interlocked.Increment(ref _scanDropsAfterRewardPromptVersion);
+        _ = ConfirmScanDropsAfterRewardRiskAsync(version);
+    }
+
+    private async Task ConfirmScanDropsAfterRewardRiskAsync(int version)
+    {
+        var messageBox = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "风险提示",
+            Content = "开启“领取奖励后扫描掉落物光柱”后，角色会在领奖完成后主动移动拾取。部分地脉花点位或特定配队下，可能因为移动范围较大而卡住。\n\n如果你愿意接受这个风险，请继续开启；否则将保持关闭。",
+            PrimaryButtonText = "接受风险并开启",
+            CloseButtonText = "不接受，保持关闭",
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+
+        var result = await messageBox.ShowDialogAsync();
+        var accepted = result == Wpf.Ui.Controls.MessageBoxResult.Primary;
+
+        if (version != _scanDropsAfterRewardPromptVersion)
+        {
+            return;
+        }
+
+        _suppressScanDropsAfterRewardPrompt = true;
+        try
+        {
+            ScanDropsAfterRewardEnabledUi = accepted;
+            Config.AutoLeyLineOutcropConfig.ScanDropsAfterRewardEnabled = accepted;
+        }
+        finally
+        {
+            _suppressScanDropsAfterRewardPrompt = false;
+        }
+    }
+
+    private void NormalizeLeyLineOutcropType()
+    {
+        var type = Config.AutoLeyLineOutcropConfig.LeyLineOutcropType;
+        if (type == "蓝花（经验书）")
+        {
+            Config.AutoLeyLineOutcropConfig.LeyLineOutcropType = "启示之花";
+            return;
+        }
+
+        if (type == "黄花（摩拉）")
+        {
+            Config.AutoLeyLineOutcropConfig.LeyLineOutcropType = "藏金之花";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(type) || !LeyLineOutcropTypeList.Contains(type))
+        {
+            Config.AutoLeyLineOutcropConfig.LeyLineOutcropType = LeyLineOutcropTypeList[0];
+        }
     }
 
 
@@ -234,7 +328,9 @@ public partial class TaskSettingsPageViewModel : ViewModel
         SwitchAutoFightEnabled = false;
         SwitchAutoMusicGameEnabled = false;
         SwitchAutoAlbumEnabled = false;
+        SwitchAutoCookEnabled = false;
         SwitchAutoFishingEnabled = false;
+        SwitchAutoLeyLineOutcropEnabled = false;
         SwitchArtifactSalvageEnabled = false;
         SwitchAutoRedeemCodeEnabled = false;
         SwitchAutoStygianOnslaughtEnabled = false;
@@ -390,8 +486,10 @@ public partial class TaskSettingsPageViewModel : ViewModel
         }
 
         SwitchAutoStygianOnslaughtEnabled = true;
+        AutoStygianOnslaughtParam param = new AutoStygianOnslaughtParam();
+        param.SetAutoStygianOnslaughtConfig(Config.AutoStygianOnslaughtConfig);
         await new TaskRunner()
-            .RunSoloTaskAsync(new AutoStygianOnslaughtTask(Config.AutoStygianOnslaughtConfig, path));
+            .RunSoloTaskAsync(new AutoStygianOnslaughtTask(param, path));
         SwitchAutoStygianOnslaughtEnabled = false;
     }
 
@@ -399,6 +497,12 @@ public partial class TaskSettingsPageViewModel : ViewModel
     private async Task OnGoToAutoStygianOnslaughtUrlAsync()
     {
         await Launcher.LaunchUriAsync(new Uri("https://bettergi.com/feats/task/stygian.html"));
+    }
+
+    [RelayCommand]
+    public async Task OnGoToAutoLeyLineOutcropUrlAsync()
+    {
+        await Launcher.LaunchUriAsync(new Uri("https://www.bettergi.com/feats/task/leyline.html"));
     }
 
 
@@ -503,6 +607,15 @@ public partial class TaskSettingsPageViewModel : ViewModel
     }
 
     [RelayCommand]
+    private async Task OnSwitchAutoCook()
+    {
+        SwitchAutoCookEnabled = true;
+        await new TaskRunner()
+            .RunSoloTaskAsync(new AutoCookTask());
+        SwitchAutoCookEnabled = false;
+    }
+
+    [RelayCommand]
     private async Task OnSwitchAutoFishing()
     {
         SwitchAutoFishingEnabled = true;
@@ -510,6 +623,17 @@ public partial class TaskSettingsPageViewModel : ViewModel
         await new TaskRunner()
             .RunSoloTaskAsync(new AutoFishingTask(param));
         SwitchAutoFishingEnabled = false;
+    }
+
+    [RelayCommand]
+    private async Task OnSwitchAutoLeyLineOutcrop()
+    {
+        SwitchAutoLeyLineOutcropEnabled = true;
+        AutoLeyLineOutcropParam autoLeyLineOutcropParam = new AutoLeyLineOutcropParam();
+        autoLeyLineOutcropParam.SetAutoLeyLineOutcropConfig(Config.AutoLeyLineOutcropConfig);
+        await new TaskRunner()
+            .RunSoloTaskAsync(new AutoLeyLineOutcropTask(autoLeyLineOutcropParam));
+        SwitchAutoLeyLineOutcropEnabled = false;
     }
 
     [RelayCommand]
@@ -633,7 +757,7 @@ public partial class TaskSettingsPageViewModel : ViewModel
     [RelayCommand]
     private async Task OnGoToGetGridIconsUrlAsync()
     {
-        await Launcher.LaunchUriAsync(new Uri("https://bettergi.com/feats/task/getGridIcons.html"));
+        await Launcher.LaunchUriAsync(new Uri("https://bettergi.com/dev/getGridIcons.html"));
     }
 
     [RelayCommand]

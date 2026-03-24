@@ -133,8 +133,9 @@ public partial class HomePageViewModel : ViewModel
 
         _autoRun = false;
 
-        var args = Environment.GetCommandLineArgs();
-        if (args.Length > 1 && args[1].Contains("start"))
+        // 只对纯 "start" 参数自动启动截图器
+        // startOneDragon、--startGroups 等由各自流程中的 StartGameTask 处理
+        if (CommandLineOptions.Instance.Action == CommandLineAction.Start)
         {
             _ = OnStartTriggerAsync();
         }
@@ -383,7 +384,7 @@ public partial class HomePageViewModel : ViewModel
             // 弹出选择文件夹对话框
             var dialog = new Ookii.Dialogs.Wpf.VistaOpenFileDialog
             {
-                Filter = "原神|YuanShen.exe|原神国际服|GenshinImpact.exe|所有文件|*.*"
+                Filter = "原神|YuanShen.exe;GenshinImpact.exe|可执行文件|*.exe|所有文件|*.*"
             };
             if (dialog.ShowDialog() == true)
             {
@@ -510,8 +511,11 @@ public partial class HomePageViewModel : ViewModel
         {
             Title = "硬件加速设置",
             Content = new HardwareAccelerationView(new HardwareAccelerationViewModel()),
-            SizeToContent = SizeToContent.WidthAndHeight,
-            ResizeMode = ResizeMode.NoResize,
+            Width = 800,
+            Height = 600,
+            MinWidth = 800,
+            MaxWidth = 800,
+            MinHeight = 600,
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             ExtendsContentIntoTitleBar = true,
@@ -585,6 +589,7 @@ public partial class HomePageViewModel : ViewModel
                 bitmap.BeginInit();
                 bitmap.UriSource = new Uri(Path.GetFullPath(_customBannerImagePath));
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache; 
                 bitmap.EndInit();
                 BannerImageSource = bitmap;
                 Toast.Success("背景图片更换成功！");
@@ -611,6 +616,7 @@ public partial class HomePageViewModel : ViewModel
             defaultBitmap.BeginInit();
             defaultBitmap.UriSource = new Uri(DefaultBannerImagePath, UriKind.Absolute);
             defaultBitmap.CacheOption = BitmapCacheOption.OnLoad;
+            defaultBitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache; 
             defaultBitmap.EndInit();
             BannerImageSource = defaultBitmap;
             

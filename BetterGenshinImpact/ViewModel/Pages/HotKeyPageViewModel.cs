@@ -218,7 +218,11 @@ public partial class HotKeyPageViewModel : ObservableObject, IViewModel
             nameof(Config.HotKeyConfig.CancelTaskHotkey),
             Config.HotKeyConfig.CancelTaskHotkey,
             Config.HotKeyConfig.CancelTaskHotkeyType,
-            (_, _) => { CancellationContext.Instance.ManualCancel(); }
+            (_, _) =>
+            {
+                _logger.LogInformation("检测到您配置的停止快捷键{Key}按下，停止当前执行任务", Config.HotKeyConfig.CancelTaskHotkey);
+                CancellationContext.Instance.ManualCancel();
+            }
         ));
         systemDirectory.Children.Add(new HotKeySettingModel(
             "暂停当前脚本/独立任务",
@@ -312,6 +316,19 @@ public partial class HotKeyPageViewModel : ObservableObject, IViewModel
             }
         );
         timerDirectory.Children.Add(quickTeleportEnabledHotKeySettingModel);
+        
+        var skillCdEnabledHotKeySettingModel = new HotKeySettingModel(
+            "冷却提示开关",
+            nameof(Config.HotKeyConfig.SkillCdEnabledHotkey),
+            Config.HotKeyConfig.SkillCdEnabledHotkey,
+            Config.HotKeyConfig.SkillCdEnabledHotkeyType,
+            (_, _) =>
+            {
+                TaskContext.Instance().Config.SkillCdConfig.Enabled = !TaskContext.Instance().Config.SkillCdConfig.Enabled;
+                _logger.LogInformation("切换{Name}状态为[{Enabled}]", "冷却提示", ToChinese(TaskContext.Instance().Config.SkillCdConfig.Enabled));
+            }
+        );
+        timerDirectory.Children.Add(skillCdEnabledHotKeySettingModel);
 
         var quickTeleportTickHotKeySettingModel = new HotKeySettingModel(
             "手动触发快速传送触发快捷键（按住起效）",
@@ -322,6 +339,19 @@ public partial class HotKeyPageViewModel : ObservableObject, IViewModel
             true
         );
         timerDirectory.Children.Add(quickTeleportTickHotKeySettingModel);
+
+        var mapMaskEnabledHotKeySettingModel = new HotKeySettingModel(
+            "地图遮罩开关",
+            nameof(Config.HotKeyConfig.MapMaskEnabledHotkey),
+            Config.HotKeyConfig.MapMaskEnabledHotkey,
+            Config.HotKeyConfig.MapMaskEnabledHotkeyType,
+            (_, _) =>
+            {
+                TaskContext.Instance().Config.MapMaskConfig.Enabled = !TaskContext.Instance().Config.MapMaskConfig.Enabled;
+                _logger.LogInformation("切换{Name}状态为[{Enabled}]", "地图遮罩", ToChinese(TaskContext.Instance().Config.MapMaskConfig.Enabled));
+            }
+        );
+        timerDirectory.Children.Add(mapMaskEnabledHotKeySettingModel);
 
         var turnAroundHotKeySettingModel = new HotKeySettingModel(
             "长按旋转视角 - 那维莱特转圈",
@@ -412,6 +442,13 @@ public partial class HotKeyPageViewModel : ObservableObject, IViewModel
             Config.HotKeyConfig.AutoFishingGameHotkey,
             Config.HotKeyConfig.AutoFishingGameHotkeyType,
             (_, _) => { SwitchSoloTask(_taskSettingsPageViewModel.SwitchAutoFishingCommand); }
+        ));
+        soloTaskDirectory.Children.Add(new HotKeySettingModel(
+            "启动/停止自动烹饪",
+            nameof(Config.HotKeyConfig.AutoCookGameHotkey),
+            Config.HotKeyConfig.AutoCookGameHotkey,
+            Config.HotKeyConfig.AutoCookGameHotkeyType,
+            (_, _) => { SwitchSoloTask(_taskSettingsPageViewModel.SwitchAutoCookCommand); }
         ));
 
         macroDirectory.Children.Add(new HotKeySettingModel(

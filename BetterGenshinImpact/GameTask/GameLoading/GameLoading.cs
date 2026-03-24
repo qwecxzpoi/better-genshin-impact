@@ -35,6 +35,7 @@ public class GameLoadingTrigger : ITaskTrigger
     public bool IsBackgroundRunning => true;
 
     private readonly GameLoadingAssets _assets;
+    private readonly ElementAssets _elementAssets;
 
     private readonly GenshinStartConfig _config = TaskContext.Instance().Config.GenshinStartConfig;
     private static ILogger<GameLoadingTrigger> _logger = App.GetLogger<GameLoadingTrigger>();
@@ -61,6 +62,7 @@ public class GameLoadingTrigger : ITaskTrigger
     {
         GameLoadingAssets.DestroyInstance();
         _assets = GameLoadingAssets.Instance;
+        _elementAssets = ElementAssets.Instance;
     }
 
     public void InnerSetEnabled(bool enabled)
@@ -150,7 +152,7 @@ public class GameLoadingTrigger : ITaskTrigger
             }
             else
             {
-                TaskControl.Logger.LogWarning("没有检测到 Starward 协议注册，请查看帮助文档！");
+                // TaskControl.Logger.LogWarning("没有检测到 Starward 协议注册，请查看帮助文档！");
                 return false;
             }
         }
@@ -247,12 +249,20 @@ public class GameLoadingTrigger : ITaskTrigger
             InnerSetEnabled(false);
             return;
         }
+        
         // 成功进入游戏判断    
         if (Bv.IsInMainUi(content.CaptureRectArea) || Bv.IsInAnyClosableUi(content.CaptureRectArea) || Bv.IsInDomain(content.CaptureRectArea))
         {
             // _logger.LogInformation("当前在游戏主界面");
             InnerSetEnabled(false);
             return;
+        }
+        
+        // 适龄提示窗口自动关闭
+        var agePopup = content.CaptureRectArea.Find(_elementAssets.BtnWhiteConfirm);
+        if (!agePopup.IsEmpty())
+        {
+            agePopup.Click();
         }
 
         // B服判断
@@ -316,15 +326,16 @@ public class GameLoadingTrigger : ITaskTrigger
 
             if (process != null && loginWindow != IntPtr.Zero)
             {
+                var dpiScale = TaskContext.Instance().DpiScale;
                 if (windowType.Contains("协议"))
                 {
-                    GameCaptureRegion.GameRegion1080PPosClick(1030, 615);
+                    GameCaptureRegion.GameRegion1080PPosClick(960 + 70 * dpiScale, 540 + 75 * dpiScale);
                 }
 
                 if (windowType.Contains("登录"))
                 {
                     Thread.Sleep(2000);
-                    GameCaptureRegion.GameRegion1080PPosClick(960, 630);
+                    GameCaptureRegion.GameRegion1080PPosClick(960, 540 + 90 * dpiScale);
                     Thread.Sleep(2000);
 
                     // 检查窗口是否还存在
@@ -342,8 +353,7 @@ public class GameLoadingTrigger : ITaskTrigger
             }
         }
 
-        var wmRa = content.CaptureRectArea.Find(_assets.WelkinMoonRo);
-        if (!wmRa.IsEmpty())
+        if (Bv.IsInBlessingOfTheWelkinMoon(content.CaptureRectArea))
         {
             GameCaptureRegion.GameRegion1080PPosMove(100, 100);
             TaskContext.Instance().PostMessageSimulator.LeftButtonClickBackground();
